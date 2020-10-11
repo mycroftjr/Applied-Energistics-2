@@ -90,14 +90,6 @@ public class ItemComparisonHelper {
                 return (percentDamagedOfA > mode.breakPoint) == (percentDamagedOfB > mode.breakPoint);
             }
         }
-// FIXME
-//		final OreReference aOR = OreHelper.INSTANCE.getOre( a ).orElse( null );
-//		final OreReference bOR = OreHelper.INSTANCE.getOre( b ).orElse( null );
-//
-//		if( OreHelper.INSTANCE.sameOre( aOR, bOR ) )
-//		{
-//			return true;
-//		}
 
         return a.isItemEqual(b);
     }

@@ -1064,11 +1064,8 @@ public class Platform {
             if (items != null && checkFuzzy) {
                 for (final IAEItemStack x : items) {
                     final ItemStack sh = x.getDefinition();
-                    if ((Platform.itemComparisons().isEqualItemType(providedTemplate,
-                            sh) /* FIXME || ae_req.sameOre( x ) */ ) && !ItemStack.areItemsEqual(sh, output)) { // Platform.isSameItemType(
-                                                                                                                // sh,
-                                                                                                                // providedTemplate
-                                                                                                                // )
+                    if ((Platform.itemComparisons().isEqualItemType(providedTemplate, sh))
+                            && !ItemStack.areItemsEqual(sh, output)) {
                         final ItemStack cp = sh.copy();
                         cp.setCount(1);
                         ci.setInventorySlotContents(slot, cp);

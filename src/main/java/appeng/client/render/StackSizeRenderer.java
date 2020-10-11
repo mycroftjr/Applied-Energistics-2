@@ -67,8 +67,7 @@ public class StackSizeRenderer {
         final float inverseScaleFactor = 1.0f / scaleFactor;
         final int offset = AEConfig.instance().isUseLargeFonts() ? 0 : -1;
 
-        TransformationMatrix tm = new TransformationMatrix(new Vector3f(0, 0, 300), // Taken from
-                                                                                    // ItemRenderer.renderItemOverlayIntoGUI
+        TransformationMatrix tm = new TransformationMatrix(new Vector3f(0, 0, 300), // Taken from ItemRenderer.renderItemOverlayIntoGUI
                 null, new Vector3f(scaleFactor, scaleFactor, scaleFactor), null);
 
         RenderSystem.disableBlend();
