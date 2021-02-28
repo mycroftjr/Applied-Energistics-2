@@ -22,9 +22,15 @@ package appeng.client.gui.implementations;
 import java.io.IOException;
 import java.util.*;
 
+import akka.event.Logging;
+import appeng.client.render.BlockPosHighlighter;
+import appeng.util.BlockPosUtils;
 import com.google.common.collect.HashMultimap;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
@@ -44,6 +50,12 @@ import appeng.parts.reporting.PartInterfaceTerminal;
 import appeng.util.Platform;
 import net.minecraft.nbt.NBTUtil;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.TextComponentString;
+import org.lwjgl.util.Color;
+import org.lwjgl.util.ReadableColor;
+
+import static appeng.client.render.BlockPosHighlighter.hilightBlock;
 
 
 public class GuiInterfaceTerminal extends AEBaseGui
@@ -57,6 +69,7 @@ public class GuiInterfaceTerminal extends AEBaseGui
 	private final HashMap<Long, ClientDCInternalInv> byId = new HashMap<>();
 	private final HashMultimap<String, ClientDCInternalInv> byName = HashMultimap.create();
 	private final HashMap<ClientDCInternalInv,BlockPos> blockPosHashMap = new HashMap<>();
+	private final HashMap<GuiButton,ClientDCInternalInv> guiButtonHashMap = new HashMap<>();
 	private final ArrayList<String> names = new ArrayList<>();
 	private final ArrayList<Object> lines = new ArrayList<>();
 
@@ -100,11 +113,14 @@ public class GuiInterfaceTerminal extends AEBaseGui
 		this.searchFieldOutputs.setTextColor( 0xFFFFFF );
 		this.searchFieldOutputs.setVisible( true );
 		this.searchFieldOutputs.setFocused( true );
+
 	}
 
 	@Override
 	public void drawFG( final int offsetX, final int offsetY, final int mouseX, final int mouseY )
 	{
+		this.buttonList.clear();
+
 		this.fontRenderer.drawString( this.getGuiDisplayName( GuiText.InterfaceTerminal.getLocal() ), 8, 6, 4210752 );
 		this.fontRenderer.drawString( GuiText.inventory.getLocal(), 8, this.ySize - 96 + 3, 4210752 );
 
@@ -130,6 +146,10 @@ public class GuiInterfaceTerminal extends AEBaseGui
 				{
 					this.inventorySlots.inventorySlots.add( new SlotDisconnected( inv, z, z * 18 + 8, 1 + offset ) );
 				}
+				GuiButton guiButton = new GuiButton( x, guiLeft + 1, guiTop + offset + 3, 8, 10, "?" );
+				guiButtonHashMap.put( guiButton , inv);
+				this.buttonList.add( guiButton );
+
 			}
 			else if( lineObj instanceof String )
 			{
@@ -174,9 +194,22 @@ public class GuiInterfaceTerminal extends AEBaseGui
 	}
 
 	@Override
+	protected void actionPerformed( final GuiButton btn ) throws IOException
+	{
+		if( guiButtonHashMap.containsKey( btn ) )
+		{
+			BlockPos blockPos = blockPosHashMap.get( guiButtonHashMap.get( this.selectedButton ) );
+			BlockPos blockPos2 = mc.player.getPosition();
+			hilightBlock( blockPos, System.currentTimeMillis() + 500 * BlockPosUtils.getDistance(blockPos, blockPos2) );
+			mc.player.sendStatusMessage( new TextComponentString( "The interface is now highlighted at " + "X: " + blockPos.getX() + "Y: " + blockPos.getY() + "Z: " + blockPos.getZ() ), false );
+			mc.player.closeScreen();
+		}
+	}
+
+	@Override
 	public void drawBG( final int offsetX, final int offsetY, final int mouseX, final int mouseY )
 	{
-		this.bindTexture( "guis/interfaceterminal.png" );
+		this.bindTexture( "guis/newinterfaceterminal.png" );
 		this.drawTexturedModalRect( offsetX, offsetY, 0, 0, this.xSize, this.ySize );
 
 		int offset = 32;
@@ -286,6 +319,7 @@ public class GuiInterfaceTerminal extends AEBaseGui
 	private void refreshList()
 	{
 		this.byName.clear();
+		this.buttonList.clear();
 
 		final String searchFieldInputs = this.searchFieldInputs.getText().toLowerCase();
 		final String searchFieldOutputs = this.searchFieldOutputs.getText().toLowerCase();
