@@ -56,9 +56,6 @@ public enum FuzzyMode {
      */
     public final float percentage;
 
-	public final float breakPoint;
-	public final float percentage;
-
 	FuzzyMode( final float p )
 	{
 		this.percentage = p;

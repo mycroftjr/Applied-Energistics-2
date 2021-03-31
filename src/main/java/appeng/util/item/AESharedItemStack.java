@@ -18,7 +18,6 @@
 
 package appeng.util.item;
 
-
 import java.util.Objects;
 
 import com.google.common.base.Preconditions;
@@ -33,32 +32,32 @@ final class AESharedItemStack {
     private final int itemDamage;
     private final int hashCode;
 
-	private final ItemStack itemStack;
-	private final int itemId;
-	private final int itemDamage;
-	private final int hashCode;
+    public AESharedItemStack(final ItemStack itemStack) {
+        this(itemStack, itemStack.getItemDamage());
+    }
 
-	public AESharedItemStack( final ItemStack itemStack )
-	{
-		this.itemStack = itemStack;
-		this.itemId = Item.getIdFromItem( itemStack.getItem() );
-		this.itemDamage = itemStack.getItemDamage();
-		this.hashCode = this.makeHashCode();
-	}
+    /**
+     * A constructor to explicitly set the damage value and not fetch it from the {@link ItemStack}
+     * 
+     * @param itemStack The {@link ItemStack} to filter
+     * @param damage    The damage of the item
+     */
+    private AESharedItemStack(ItemStack itemStack, int damage) {
+        this.itemStack = itemStack;
+        this.itemId = Item.getIdFromItem(itemStack.getItem());
+        this.itemDamage = damage;
 
-	Bounds getBounds( final FuzzyMode fuzzy, final boolean ignoreMeta )
-	{
-		return new Bounds( this.itemStack, fuzzy, ignoreMeta );
-	}
+        // Ensure this is always called last.
+        this.hashCode = this.makeHashCode();
+    }
 
     ItemStack getDefinition() {
         return this.itemStack;
     }
 
-	int getItemID()
-	{
-		return this.itemId;
-	}
+    int getItemDamage() {
+        return this.itemDamage;
+    }
 
     @Override
     public int hashCode() {
@@ -88,7 +87,7 @@ final class AESharedItemStack {
         return Objects.hash(
                 this.itemId,
                 this.itemDamage,
-                this.itemStack.hasTag() ? this.itemStack.getTag() : 0);
+                this.itemStack.hasTagCompound() ? this.itemStack.getTagCompound() : 0);
     }
 
 }

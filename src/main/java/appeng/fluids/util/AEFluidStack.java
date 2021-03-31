@@ -32,6 +32,7 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
 
@@ -217,18 +218,6 @@ public final class AEFluidStack extends AEStack<IAEFluidStack> implements IAEFlu
 	}
 
 	@Override
-	public boolean isItem()
-	{
-		return false;
-	}
-
-	@Override
-	public boolean isFluid()
-	{
-		return true;
-	}
-
-	@Override
 	public IStorageChannel<IAEFluidStack> getChannel()
 	{
 		return AEApi.instance().storage().getStorageChannel( IFluidStorageChannel.class );
@@ -318,17 +307,17 @@ public final class AEFluidStack extends AEStack<IAEFluidStack> implements IAEFlu
 	}
 
 	@Override
-	public void writeToPacket( final ByteBuf buffer ) throws IOException
+	public void writeToPacket( final ByteBuf i ) throws IOException
 	{
 		final byte mask = (byte) ( ( this.getType( this.getStackSize() ) << 2 ) | ( this
 				.getType( this.getCountRequestable() ) << 4 ) | ( (byte) ( this.isCraftable() ? 1 : 0 ) << 6 ) | ( this.hasTagCompound() ? 1 : 0 ) << 7 );
 
-		buffer.writeByte( mask );
+		i.writeByte( mask );
 
-		this.writeToStream( buffer );
+		this.writeToStream( i );
 
-		this.putPacketValue( buffer, this.getStackSize() );
-		this.putPacketValue( buffer, this.getCountRequestable() );
+		this.putPacketValue( i, this.getStackSize() );
+		this.putPacketValue( i, this.getCountRequestable() );
 	}
 
 	private void writeToStream( final ByteBuf buffer ) throws IOException

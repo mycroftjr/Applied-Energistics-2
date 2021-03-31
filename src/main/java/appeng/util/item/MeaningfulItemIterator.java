@@ -43,13 +43,11 @@ public class MeaningfulItemIterator<T extends IAEItemStack> implements Iterator<
         return this.next != null;
     }
 
-	@Override
-	public T next()
-	{
-		if( this.next == null )
-		{
-			throw new NoSuchElementException();
-		}
+    @Override
+    public T next() {
+        if (this.next == null) {
+            throw new NoSuchElementException();
+        }
 
         T result = this.next;
         this.next = this.seekNext();

@@ -1,6 +1,6 @@
 /*
  * This file is part of Applied Energistics 2.
- * Copyright (c) 2013 - 2015, AlgorithmX2, All rights reserved.
+ * Copyright (c) 2013 - 2020, AlgorithmX2, All rights reserved.
  *
  * Applied Energistics 2 is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -18,8 +18,6 @@
 
 package appeng.util.item;
 
-
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
@@ -27,13 +25,16 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import net.minecraftforge.oredict.OreDictionary;
+import net.minecraft.item.Item;
+
+import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 
 import appeng.api.config.FuzzyMode;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.storage.data.IItemList;
-import appeng.util.item.AESharedItemStack.Bounds;
 
+public final class ItemList implements IItemList<IAEItemStack> {
 
     private final Reference2ObjectMap<Item, ItemVariantList> records = new Reference2ObjectOpenHashMap<>();
     /**
@@ -53,18 +54,20 @@ import appeng.util.item.AESharedItemStack.Bounds;
         return record != null ? record.findPrecise(itemStack) : null;
     }
 
-		if( st != null )
-		{
-			st.add( option );
-			return;
-		}
+    @Override
+    public Collection<IAEItemStack> findFuzzy(final IAEItemStack filter, final FuzzyMode fuzzy) {
+        if (filter == null) {
+            return Collections.emptyList();
+        }
 
         ItemVariantList record = this.records.get(filter.getItem());
         return record != null ? record.findFuzzy(filter, fuzzy) : Collections.emptyList();
     }
 
-		this.putItemRecord( opt );
-	}
+    @Override
+    public boolean isEmpty() {
+        return !this.iterator().hasNext();
+    }
 
     @Override
     public void add(final IAEItemStack itemStack) {
@@ -74,8 +77,8 @@ import appeng.util.item.AESharedItemStack.Bounds;
             return;
         }
 
-		return this.records.get( ( (AEItemStack) itemStack ).getSharedStack() );
-	}
+        this.getOrCreateRecord(itemStack.getItem()).add(itemStack);
+    }
 
     @Override
     public void addStorage(final IAEItemStack itemStack) {
@@ -85,7 +88,8 @@ import appeng.util.item.AESharedItemStack.Bounds;
             return;
         }
 
-		final AEItemStack ais = (AEItemStack) filter;
+        this.getOrCreateRecord(itemStack.getItem()).addStorage(itemStack);
+    }
 
     @Override
     public void addCrafting(final IAEItemStack itemStack) {
@@ -95,11 +99,8 @@ import appeng.util.item.AESharedItemStack.Bounds;
             return;
         }
 
-				return this.findFuzzyDamage( is, fuzzy, is.getItemDamage() == OreDictionary.WILDCARD_VALUE );
-			}
-			else
-			{
-				final Collection<IAEItemStack> output = new ArrayList<>();
+        this.getOrCreateRecord(itemStack.getItem()).addCrafting(itemStack);
+    }
 
     @Override
     public void addRequestable(final IAEItemStack itemStack) {
@@ -109,24 +110,17 @@ import appeng.util.item.AESharedItemStack.Bounds;
             return;
         }
 
-				return output;
-			}
-		} ).orElse( this.findFuzzyDamage( ais, fuzzy, false ) );
-	}
+        this.getOrCreateRecord(itemStack.getItem()).addRequestable(itemStack);
+    }
 
-	@Override
-	public boolean isEmpty()
-	{
-		return !this.iterator().hasNext();
-	}
+    @Override
+    public IAEItemStack getFirstItem() {
+        for (final IAEItemStack stackType : this) {
+            return stackType;
+        }
 
-	@Override
-	public void addStorage( final IAEItemStack option )
-	{
-		if( option == null )
-		{
-			return;
-		}
+        return null;
+    }
 
     @Override
     public int size() {
@@ -135,19 +129,20 @@ import appeng.util.item.AESharedItemStack.Bounds;
             size += entry.size();
         }
 
-		if( st != null )
-		{
-			st.incStackSize( option.getStackSize() );
-			return;
-		}
+        return size;
+    }
 
     @Override
     public Iterator<IAEItemStack> iterator() {
         return new ChainedIterator(this.records.values().iterator(), version);
     }
 
-		this.putItemRecord( opt );
-	}
+    @Override
+    public void resetStatus() {
+        for (final IAEItemStack i : this) {
+            i.reset();
+        }
+    }
 
     private ItemVariantList getOrCreateRecord(Item item) {
         return this.records.computeIfAbsent(item, this::makeRecordMap);
