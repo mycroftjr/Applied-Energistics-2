@@ -19,17 +19,21 @@
 package appeng.me.cache;
 
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import appeng.api.AEApi;
+import appeng.api.storage.channels.IFluidStorageChannel;
+import appeng.api.storage.channels.IItemStorageChannel;
+import appeng.api.storage.data.IAEFluidStack;
+import appeng.api.storage.data.IAEItemStack;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Queues;
 
@@ -66,6 +70,8 @@ public class NetworkMonitor<T extends IAEStack<T>> implements IMEMonitor<T>
 	private boolean hasChanged = false;
 	@Nonnegative
 	private int localDepthSemaphore = 0;
+	private long gridItemCount;
+	private long gridFluidCount;
 
 	public NetworkMonitor( final GridStorageCache cache, final IStorageChannel<T> chan )
 	{
@@ -135,6 +141,32 @@ public class NetworkMonitor<T extends IAEStack<T>> implements IMEMonitor<T>
 	public int getSlot()
 	{
 		return this.getHandler().getSlot();
+	}
+
+	public long getGridCurrentCount()
+	{
+		if( myChannel == AEApi.instance().storage().getStorageChannel( IItemStorageChannel.class ) )
+		{
+			return gridItemCount;
+		}
+		else if( myChannel == AEApi.instance().storage().getStorageChannel( IFluidStorageChannel.class ) )
+		{
+			return gridFluidCount;
+		}
+		return 0;
+	}
+
+	public long incGridCurrentCount(long count)
+	{
+		if( myChannel == AEApi.instance().storage().getStorageChannel( IItemStorageChannel.class ) )
+		{
+			return gridItemCount += count;
+		}
+		else if( myChannel == AEApi.instance().storage().getStorageChannel( IFluidStorageChannel.class ) )
+		{
+			return gridFluidCount += count;
+		}
+		return 0;
 	}
 
 	@Nonnull
@@ -258,9 +290,7 @@ public class NetworkMonitor<T extends IAEStack<T>> implements IMEMonitor<T>
 
 		this.sendEvent = true;
 
-		this.notifyListenersOfChange( changes, src );
-
-		for( final T changedItem : changes )
+		for ( final T changedItem : changes )
 		{
 			T difference = changedItem;
 
@@ -270,31 +300,28 @@ public class NetworkMonitor<T extends IAEStack<T>> implements IMEMonitor<T>
 				difference.setStackSize( -changedItem.getStackSize() );
 			}
 
+			incGridCurrentCount( difference.getStackSize() );
+			this.cachedList.add( difference );
+
 			if( this.myGridCache.getInterestManager().containsKey( changedItem ) )
 			{
 				final Collection<ItemWatcher> list = this.myGridCache.getInterestManager().get( changedItem );
 
 				if( !list.isEmpty() )
 				{
-					IAEStack<T> fullStack = this.getStorageList().findPrecise( changedItem );
-
-					if( fullStack == null )
-					{
-						fullStack = changedItem.copy();
-						fullStack.setStackSize( 0 );
-					}
-
 					this.myGridCache.getInterestManager().enableTransactions();
 
 					for( final ItemWatcher iw : list )
 					{
-						iw.getHost().onStackChange( this.getStorageList(), fullStack, difference, src, this.getChannel() );
+						iw.getHost().onStackChange( difference, this.getChannel() );
 					}
 
 					this.myGridCache.getInterestManager().disableTransactions();
 				}
 			}
 		}
+
+		this.notifyListenersOfChange( changes, src );
 
 		final NetworkMonitor<?> last = GLOBAL_DEPTH.pop();
 		this.localDepthSemaphore--;
@@ -308,9 +335,28 @@ public class NetworkMonitor<T extends IAEStack<T>> implements IMEMonitor<T>
 	void forceUpdate()
 	{
 		this.hasChanged = true;
+		//when the grid comes back online, reset the count to 0 so
+		//it reflects the correct amount after the changes are accounted for
+
+		if( myChannel == AEApi.instance().storage().getStorageChannel( IItemStorageChannel.class ) )
+		{
+			gridItemCount = 0;
+			for( IAEItemStack iaeItemStack : (Iterable<IAEItemStack>) getStorageList() )
+			{
+				gridItemCount += iaeItemStack.getStackSize();
+			}
+		}
+		else if( myChannel == AEApi.instance().storage().getStorageChannel( IFluidStorageChannel.class ) )
+		{
+			gridFluidCount = 0;
+			for( IAEFluidStack iaeFluidStack : (Iterable<IAEFluidStack>) getStorageList() )
+			{
+				gridFluidCount += iaeFluidStack.getStackSize();
+			}
+		}
 
 		final Iterator<Entry<IMEMonitorHandlerReceiver<T>, Object>> i = this.getListeners();
-		while( i.hasNext() )
+		while ( i.hasNext() )
 		{
 			final Entry<IMEMonitorHandlerReceiver<T>, Object> o = i.next();
 			final IMEMonitorHandlerReceiver<T> receiver = o.getKey();
@@ -333,5 +379,6 @@ public class NetworkMonitor<T extends IAEStack<T>> implements IMEMonitor<T>
 			this.sendEvent = false;
 			this.myGridCache.getGrid().postEvent( new MENetworkStorageEvent( this, this.myChannel ) );
 		}
+
 	}
 }
