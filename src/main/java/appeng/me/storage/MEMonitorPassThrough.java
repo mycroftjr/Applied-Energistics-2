@@ -90,6 +90,13 @@ public class MEMonitorPassThrough<T extends IAEStack<T>> extends MEPassThrough<T
 	@Override
 	public void addListener( final IMEMonitorHandlerReceiver<T> l, final Object verificationToken )
 	{
+		if( this.listeners.size() == 0 )
+		{
+			if( this.monitor != null )
+			{
+				this.monitor.addListener( this, this.monitor );
+			}
+		}
 		this.listeners.put( l, verificationToken );
 	}
 
@@ -115,6 +122,12 @@ public class MEMonitorPassThrough<T extends IAEStack<T>> extends MEPassThrough<T
 	public boolean isValid( final Object verificationToken )
 	{
 		return verificationToken == this.monitor;
+	}
+
+	@Override
+	public boolean hasListeners()
+	{
+		return this.listeners.size() > 0;
 	}
 
 	@Override
