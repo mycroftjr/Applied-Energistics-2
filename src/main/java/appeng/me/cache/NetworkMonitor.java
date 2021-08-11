@@ -25,6 +25,8 @@ import javax.annotation.Nullable;
 import appeng.api.AEApi;
 import appeng.api.config.AccessRestriction;
 import appeng.api.config.Actionable;
+import appeng.api.config.FuzzyMode;
+import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.api.networking.events.MENetworkStorageEvent;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.storage.IMEInventoryHandler;
@@ -33,6 +35,7 @@ import appeng.api.storage.IMEMonitorHandlerReceiver;
 import appeng.api.storage.IStorageChannel;
 import appeng.api.storage.channels.IFluidStorageChannel;
 import appeng.api.storage.channels.IItemStorageChannel;
+import appeng.api.storage.data.IAEItemStack;
 import appeng.api.storage.data.IAEStack;
 import appeng.api.storage.data.IItemList;
 import appeng.me.storage.ItemWatcher;
@@ -266,6 +269,67 @@ public class NetworkMonitor<T extends IAEStack<T>> implements IMEMonitor<T>
 					}
 
 					this.myGridCache.getInterestManager().disableTransactions();
+				}
+			}
+			if( changedItem instanceof IAEItemStack )
+			{
+				if( this.myGridCache.getPatternStatusManager().containsMissingIAEStack( changedItem ) )
+				{
+					this.myGridCache.getPatternStatusManager().enableTransactions();
+
+					for( ICraftingPatternDetails craftingPatternDetails : this.myGridCache.getPatternStatusManager().getIncompletablePattern( changedItem ) )
+					{
+						for( IAEStack stack : this.myGridCache.getPatternStatusManager().getMissingIAEStack( craftingPatternDetails ) )
+						{
+							if( craftingPatternDetails.canSubstitute() )
+							{
+								if( ( (IAEItemStack) stack ).getItem().isDamageable() )
+								{
+									if( ( (IAEStack) changedItem ).fuzzyComparison( stack, FuzzyMode.IGNORE_ALL ) )
+									{
+										if( changedItem.getStackSize() > 0 )
+										{
+											this.myGridCache.getPatternStatusManager().remove( craftingPatternDetails, stack );
+										}
+									}
+								}
+								else
+								{
+									if( ( (IAEItemStack) stack ).sameOre( (IAEItemStack) changedItem ) )
+									{
+										if( changedItem.getStackSize() > 0 )
+										{
+											if( changedItem.getStackSize() >= stack.getStackSize() )
+											{
+												this.myGridCache.getPatternStatusManager().remove( craftingPatternDetails, stack );
+											}
+											else
+											{
+												stack.decStackSize( changedItem.getStackSize() );
+											}
+										}
+									}
+								}
+							}
+							else if( stack.equals( changedItem ) )
+							{
+								if( changedItem.getStackSize() > 0 )
+								{
+									if( changedItem.getStackSize() >= stack.getStackSize() )
+									{
+										this.myGridCache.getPatternStatusManager().remove( craftingPatternDetails, stack );
+									}
+									else
+									{
+										stack.decStackSize( changedItem.getStackSize() );
+									}
+								}
+							}
+						}
+					}
+
+					this.myGridCache.getPatternStatusManager().disableTransactions();
+
 				}
 			}
 		}

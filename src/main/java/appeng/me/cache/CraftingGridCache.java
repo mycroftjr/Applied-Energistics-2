@@ -35,7 +35,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 
-import appeng.api.storage.data.IAEFluidStack;
+import appeng.me.helpers.PatternStatusManager;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
@@ -267,16 +267,17 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
 		// coalesce change events during a grid traversal to a single rebuild
 		if (pauseRebuilds != 0)
 		{
-			rebuildNeeded.add(this);
+			rebuildNeeded.add( this );
 			return;
 		}
 
-		final Object2ObjectMap<IAEItemStack, ImmutableList<ICraftingPatternDetails>> oldItems = new Object2ObjectOpenHashMap<>(this.craftableItems);
+		final Object2ObjectMap<IAEItemStack, ImmutableList<ICraftingPatternDetails>> oldItems = new Object2ObjectOpenHashMap<>( this.craftableItems );
 
 		// erase list.
 		this.craftingMethods.clear();
 		this.craftableItems.clear();
 		this.emitableItems.clear();
+		( (GridStorageCache) this.storageGrid ).clearDebts();
 
 		// re-create list..
 		for( final ICraftingProvider provider : this.craftingProviders )
@@ -648,7 +649,7 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
 
 	public boolean hasCpu( final ICraftingCPU cpu )
 	{
-		if (cpu instanceof CraftingCPUCluster)
+		if( cpu instanceof CraftingCPUCluster )
 		{
 			return this.craftingCPUClusters.contains( (CraftingCPUCluster) cpu );
 		}
@@ -658,6 +659,11 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
 	public GenericInterestManager<CraftingWatcher> getInterestManager()
 	{
 		return this.interestManager;
+	}
+
+	public PatternStatusManager getPatternDebtManager()
+	{
+		return ( (GridStorageCache) this.storageGrid ).getPatternStatusManager();
 	}
 
 	private static class ActiveCpuIterator implements Iterator<ICraftingCPU>

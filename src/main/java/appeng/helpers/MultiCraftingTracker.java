@@ -22,6 +22,9 @@ package appeng.helpers;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import appeng.api.networking.crafting.*;
+import appeng.me.cache.CraftingGridCache;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 
 import net.minecraft.nbt.NBTTagCompound;
@@ -29,10 +32,6 @@ import net.minecraft.world.World;
 
 import appeng.api.AEApi;
 import appeng.api.networking.IGrid;
-import appeng.api.networking.crafting.ICraftingGrid;
-import appeng.api.networking.crafting.ICraftingJob;
-import appeng.api.networking.crafting.ICraftingLink;
-import appeng.api.networking.crafting.ICraftingRequester;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.util.InventoryAdaptor;
@@ -131,6 +130,17 @@ public class MultiCraftingTracker
 				{
 					final IAEItemStack aisC = ais.copy();
 					aisC.setStackSize( itemToCraft );
+
+					CraftingGridCache cgc = (CraftingGridCache) cg;
+
+					ImmutableCollection<ICraftingPatternDetails> cl = cgc.getCraftingFor( aisC, null, 0, w );
+					for( ICraftingPatternDetails craftingPatternDetails : cl )
+					{
+						if( cgc.getPatternDebtManager().containsIncompletablePattern( craftingPatternDetails ) )
+						{
+							return false;
+						}
+					}
 
 					this.setJob( x, cg.beginCraftingJob( w, g, mySrc, aisC, null ) );
 				}

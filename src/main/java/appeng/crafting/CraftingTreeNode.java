@@ -22,7 +22,10 @@ package appeng.crafting;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
+import appeng.util.item.OreHelper;
+import appeng.util.item.OreReference;
 import com.google.common.collect.Lists;
 
 import net.minecraft.world.World;
@@ -115,6 +118,11 @@ public class CraftingTreeNode
 		}
 
 		return this.parent.notRecursive( details );
+	}
+
+	public CraftingTreeProcess getParent()
+	{
+		return parent;
 	}
 
 	IAEItemStack request( final MECraftingInventory inv, long l, final IActionSource src ) throws CraftBranchFailure, InterruptedException
@@ -318,6 +326,7 @@ public class CraftingTreeNode
 		if( this.missing > 0 )
 		{
 			job.addMissing( this.getStack( this.missing ) );
+			addMissingIAEStack();
 		}
 		// missing = 0;
 
@@ -326,6 +335,29 @@ public class CraftingTreeNode
 		for( final CraftingTreeProcess pro : this.nodes )
 		{
 			pro.dive( job );
+		}
+	}
+
+	void addMissingIAEStack()
+	{
+		if( parent != null )
+		{
+			parent.addMissingIAEStack();
+			if( missing > 0 )
+			{
+				if( this.parent.details.canSubstitute() && this.getSlot() >= 0 )
+				{
+					final List<IAEItemStack> substitutes = this.parent.details.getSubstituteInputs( this.slot );
+					for( IAEItemStack stack : substitutes )
+					{
+						job.addIncompletablePattern( this.getParent().details, stack.copy().setStackSize( this.missing ) );
+					}
+				}
+				else
+				{
+					job.addIncompletablePattern( this.getParent().details, this.getStack( this.missing ) );
+				}
+			}
 		}
 	}
 

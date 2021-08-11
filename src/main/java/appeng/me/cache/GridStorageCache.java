@@ -26,7 +26,10 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
+import appeng.api.networking.crafting.ICraftingPatternDetails;
+import appeng.me.helpers.PatternStatusManager;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.SetMultimap;
 
 import appeng.api.AEApi;
@@ -65,6 +68,10 @@ public class GridStorageCache implements IStorageGrid
 	private final HashSet<ICellProvider> inactiveCellProviders = new HashSet<>();
 	private final SetMultimap<IAEStack, ItemWatcher> interests = HashMultimap.create();
 	private final GenericInterestManager<ItemWatcher> interestManager = new GenericInterestManager<>( this.interests );
+	private final Multimap<ICraftingPatternDetails, IAEStack> patternDetails2IAEStackMultimap = HashMultimap.create();
+	private final Multimap<IAEStack, ICraftingPatternDetails> iaeStack2PatternDetailsMultimap = HashMultimap.create();
+	private final PatternStatusManager patternStatusManager = new PatternStatusManager( this.patternDetails2IAEStackMultimap, this.iaeStack2PatternDetailsMultimap );
+
 	private final HashMap<IGridNode, IStackWatcher> watchers = new HashMap<>();
 	private Map<IStorageChannel<? extends IAEStack>, NetworkInventoryHandler<?>> storageNetworks;
 	private Map<IStorageChannel<? extends IAEStack>, NetworkMonitor<?>> storageMonitors;
@@ -302,6 +309,17 @@ public class GridStorageCache implements IStorageGrid
 	public GenericInterestManager<ItemWatcher> getInterestManager()
 	{
 		return this.interestManager;
+	}
+
+	public PatternStatusManager getPatternStatusManager()
+	{
+		return this.patternStatusManager;
+	}
+
+	public void clearDebts()
+	{
+		this.patternDetails2IAEStackMultimap.clear();
+		this.iaeStack2PatternDetailsMultimap.clear();
 	}
 
 	IGrid getGrid()

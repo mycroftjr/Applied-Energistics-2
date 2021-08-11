@@ -22,6 +22,7 @@ package appeng.crafting;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
+import appeng.me.cache.CraftingGridCache;
 import com.google.common.base.Stopwatch;
 
 import net.minecraft.entity.player.EntityPlayer;
@@ -71,6 +72,8 @@ public class CraftingJob implements Runnable, ICraftingJob
 	private boolean done = false;
 	private int time;
 	private int incTime;
+	private final ICraftingGrid cc;
+	private final IStorageGrid sg;
 
 	private World wrapWorld( final World w )
 	{
@@ -84,10 +87,9 @@ public class CraftingJob implements Runnable, ICraftingJob
 		this.actionSrc = actionSrc;
 
 		this.callback = callback;
-		final ICraftingGrid cc = grid.getCache( ICraftingGrid.class );
-		final IStorageGrid sg = grid.getCache( IStorageGrid.class );
-		this.original = new MECraftingInventory( sg
-				.getInventory( AEApi.instance().storage().getStorageChannel( IItemStorageChannel.class ) ), actionSrc, false, false, false );
+		this.cc = grid.getCache( ICraftingGrid.class );
+		this.sg = grid.getCache( IStorageGrid.class );
+		this.original = new MECraftingInventory( sg.getInventory( AEApi.instance().storage().getStorageChannel( IItemStorageChannel.class ) ), actionSrc, false, false, false );
 
 		this.setTree( this.getCraftingTree( cc, what ) );
 		this.availableCheck = null;
@@ -378,6 +380,11 @@ public class CraftingJob implements Runnable, ICraftingJob
 
 			AELog.crafting( LOG_CRAFTING_JOB, type, actionSource, itemToOutput, this.bytes, elapsedTime );
 		}
+	}
+
+	public void addIncompletablePattern( ICraftingPatternDetails details, IAEItemStack stack )
+	{
+		( (CraftingGridCache) cc ).getPatternDebtManager().put( details, stack );
 	}
 
 	private static class TwoIntegers

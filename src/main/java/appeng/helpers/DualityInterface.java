@@ -24,9 +24,12 @@ import java.util.*;
 import javax.annotation.Nullable;
 
 import appeng.api.definitions.IItemDefinition;
+import appeng.api.networking.crafting.*;
 import appeng.integration.modules.gregtech.GTCEInventoryAdaptor;
+import appeng.me.cache.CraftingGridCache;
 import appeng.util.*;
 import appeng.util.inv.*;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 
 import de.ellpeck.actuallyadditions.api.tile.IPhantomTile;
@@ -65,10 +68,6 @@ import appeng.api.implementations.tiles.ICraftingMachine;
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridNode;
-import appeng.api.networking.crafting.ICraftingLink;
-import appeng.api.networking.crafting.ICraftingPatternDetails;
-import appeng.api.networking.crafting.ICraftingProvider;
-import appeng.api.networking.crafting.ICraftingProviderHelper;
 import appeng.api.networking.energy.IEnergySource;
 import appeng.api.networking.events.MENetworkCraftingPatternChange;
 import appeng.api.networking.security.IActionHost;
@@ -110,7 +109,6 @@ import static gregtech.api.block.machines.BlockMachine.getMetaTileEntity;
 
 public class DualityInterface implements IGridTickable, IStorageMonitorable, IInventoryDestination, IAEAppEngInventory, IConfigManagerHost, ICraftingProvider, IUpgradeableHost
 {
-	private int[] failedCraftTriesSlot = {0,0,0,0,0,0,0,0,0};
 
 	public static final int NUMBER_OF_STORAGE_SLOTS = 9;
 	public static final int NUMBER_OF_CONFIG_SLOTS = 9;
@@ -931,17 +929,7 @@ public class DualityInterface implements IGridTickable, IStorageMonitorable, IIn
 		{
 			if( this.getInstalledUpgrades( Upgrades.CRAFTING ) > 0 && itemStack != null )
 			{
-				if (this.failedCraftTriesSlot[x] <= 0)
-				{
-					boolean crafted = this.craftingTracker.handleCrafting( x, itemStack.getStackSize(), itemStack, d, this.iHost.getTileEntity().getWorld(),
-						this.gridProxy.getGrid(), this.gridProxy.getCrafting(), this.mySource );
-
-					if (crafted) this.failedCraftTriesSlot[x] = 0;
-					else{
-						this.failedCraftTriesSlot[x] += 2;
-					}
-				}
-				this.failedCraftTriesSlot[x] -= 1;
+				return this.craftingTracker.handleCrafting( x, itemStack.getStackSize(), itemStack, d, this.iHost.getTileEntity().getWorld(), this.gridProxy.getGrid(), this.gridProxy.getCrafting(), this.mySource );
 			}
 		}
 		catch( final GridAccessException e )

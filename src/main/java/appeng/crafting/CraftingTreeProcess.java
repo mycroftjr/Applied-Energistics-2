@@ -23,11 +23,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import appeng.me.cache.CraftingGridCache;
 import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldServer;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 
 import appeng.api.AEApi;
 import appeng.api.config.Actionable;
@@ -66,7 +65,7 @@ public class CraftingTreeProcess
 		this.depth = depth;
 		final World world = job.getWorld();
 
-		if( details.isCraftable() )
+		if( !( (CraftingGridCache) cc ).getPatternDebtManager().containsIncompletablePattern( details ) && details.isCraftable() )
 		{
 			final IAEItemStack[] list = details.getInputs();
 
@@ -172,6 +171,11 @@ public class CraftingTreeProcess
 	boolean notRecursive( final ICraftingPatternDetails details )
 	{
 		return this.parent == null || this.parent.notRecursive( details );
+	}
+
+	public CraftingTreeNode getParent()
+	{
+		return parent;
 	}
 
 	long getTimes( final long remaining, final long stackSize )
@@ -315,6 +319,14 @@ public class CraftingTreeProcess
 		for( final CraftingTreeNode pro : this.nodes.keySet() )
 		{
 			pro.getPlan( plan );
+		}
+	}
+
+	public void addMissingIAEStack()
+	{
+		if( parent != null )
+		{
+			parent.addMissingIAEStack();
 		}
 	}
 }

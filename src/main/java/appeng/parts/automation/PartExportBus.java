@@ -19,6 +19,9 @@
 package appeng.parts.automation;
 
 
+import appeng.api.networking.crafting.ICraftingPatternDetails;
+import appeng.me.cache.CraftingGridCache;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -150,18 +153,14 @@ public class PartExportBus extends PartSharedItemBus implements ICraftingRequest
 
 					final IAEItemStack ais = this.getConfig().getAEStackInSlot( slotToExport );
 
-					if( ais == null || this.itemToSend <= 0 ) continue;
+					if( ais == null || this.itemToSend <= 0 )
+					{
+						continue;
+					}
 
-					if ( this.craftOnly() ) {
-						if (this.failedCraftTriesSlot[x] <= 0) {
-
-							this.didSomething = this.craftingTracker.handleCrafting(slotToExport, this.itemToSend, ais, destination, this.getTile().getWorld(),
-									this.getProxy().getGrid(), cg, this.mySrc) || this.didSomething;
-
-							if (this.didSomething) this.failedCraftTriesSlot[x] = 0;
-							else this.failedCraftTriesSlot[x] += 2;
-						}
-						this.failedCraftTriesSlot[x] -= 1;
+					if( this.craftOnly() )
+					{
+						this.didSomething = this.craftingTracker.handleCrafting( slotToExport, this.itemToSend, ais, destination, this.getTile().getWorld(), this.getProxy().getGrid(), cg, this.mySrc ) || this.didSomething;
 						continue;
 					}
 
@@ -188,15 +187,7 @@ public class PartExportBus extends PartSharedItemBus implements ICraftingRequest
 
 					if( this.itemToSend == before && this.isCraftingEnabled() )
 					{
-						if (this.failedCraftTriesSlot[x] <= 0) {
-
-							this.didSomething = this.craftingTracker.handleCrafting(slotToExport, this.itemToSend, ais, destination, this.getTile().getWorld(),
-									this.getProxy().getGrid(), cg, this.mySrc) || this.didSomething;
-
-							if (this.didSomething) this.failedCraftTriesSlot[x] = 0;
-							else this.failedCraftTriesSlot[x] += 2;
-						}
-						this.failedCraftTriesSlot[x] -= 1;
+						this.didSomething = this.craftingTracker.handleCrafting( slotToExport, this.itemToSend, ais, destination, this.getTile().getWorld(), this.getProxy().getGrid(), cg, this.mySrc ) || this.didSomething;
 					}
 				}
 
