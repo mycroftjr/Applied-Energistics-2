@@ -65,7 +65,7 @@ public class CraftingTreeProcess
 		this.depth = depth;
 		final World world = job.getWorld();
 
-		if( !( (CraftingGridCache) cc ).getPatternDebtManager().containsIncompletablePattern( details ) && details.isCraftable() )
+		if( !( (CraftingGridCache) cc ).getPatternStatusManager().containsIncompletablePattern( details ) && details.isCraftable() )
 		{
 			final IAEItemStack[] list = details.getInputs();
 

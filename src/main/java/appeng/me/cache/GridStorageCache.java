@@ -316,8 +316,9 @@ public class GridStorageCache implements IStorageGrid
 		return this.patternStatusManager;
 	}
 
-	public void clearDebts()
+	public void clearPatternStatus()
 	{
+		System.out.println( "reseting pattern status due to pattern changes" );
 		this.patternDetails2IAEStackMultimap.clear();
 		this.iaeStack2PatternDetailsMultimap.clear();
 	}

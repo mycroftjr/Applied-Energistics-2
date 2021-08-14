@@ -133,10 +133,10 @@ public class MultiCraftingTracker
 
 					CraftingGridCache cgc = (CraftingGridCache) cg;
 
-					ImmutableCollection<ICraftingPatternDetails> cl = cgc.getCraftingFor( aisC, null, 0, w );
+					ImmutableCollection<ICraftingPatternDetails> cl = cgc.getCraftingFor( aisC, null, x, w );
 					for( ICraftingPatternDetails craftingPatternDetails : cl )
 					{
-						if( cgc.getPatternDebtManager().containsIncompletablePattern( craftingPatternDetails ) )
+						if( cgc.getPatternStatusManager().containsIncompletablePattern( craftingPatternDetails ) )
 						{
 							return false;
 						}

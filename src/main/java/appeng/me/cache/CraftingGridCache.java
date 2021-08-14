@@ -277,7 +277,7 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
 		this.craftingMethods.clear();
 		this.craftableItems.clear();
 		this.emitableItems.clear();
-		( (GridStorageCache) this.storageGrid ).clearDebts();
+		( (GridStorageCache) this.storageGrid ).clearPatternStatus();
 
 		// re-create list..
 		for( final ICraftingProvider provider : this.craftingProviders )
@@ -661,7 +661,7 @@ public class CraftingGridCache implements ICraftingGrid, ICraftingProviderHelper
 		return this.interestManager;
 	}
 
-	public PatternStatusManager getPatternDebtManager()
+	public PatternStatusManager getPatternStatusManager()
 	{
 		return ( (GridStorageCache) this.storageGrid ).getPatternStatusManager();
 	}

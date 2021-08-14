@@ -384,7 +384,7 @@ public class CraftingJob implements Runnable, ICraftingJob
 
 	public void addIncompletablePattern( ICraftingPatternDetails details, IAEItemStack stack )
 	{
-		( (CraftingGridCache) cc ).getPatternDebtManager().put( details, stack );
+		( (CraftingGridCache) cc ).getPatternStatusManager().put( details, stack );
 	}
 
 	private static class TwoIntegers
