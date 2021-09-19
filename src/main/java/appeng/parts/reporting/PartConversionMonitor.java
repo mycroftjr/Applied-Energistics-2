@@ -170,8 +170,7 @@ public class PartConversionMonitor extends AbstractPartMonitor
 				this.insertItem( player, hand, false );
 			}
 		}
-
-		return true;
+		return super.onPartActivate( player, hand, pos );
 	}
 
 	@Override
