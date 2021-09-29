@@ -207,7 +207,7 @@ public class PartFluidStorageBus extends PartSharedStorageBus implements IMEMoni
 		{
 			this.resetCacheLogic = 2;
 		}
-		else
+		else if( resetCacheLogic < 2 )
 		{
 			this.resetCacheLogic = 1;
 		}

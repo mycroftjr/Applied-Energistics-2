@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import appeng.tile.misc.TileInterface;
+import appeng.tile.networking.TileCableBus;
 import com.jaquadro.minecraft.storagedrawers.api.capabilities.IItemRepository;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
@@ -234,7 +236,7 @@ public class PartStorageBus extends PartUpgradeable implements IGridTickable, IC
 		{
 			this.resetCacheLogic = 2;
 		}
-		else
+		else if( resetCacheLogic < 2 )
 		{
 			this.resetCacheLogic = 1;
 		}
@@ -296,7 +298,15 @@ public class PartStorageBus extends PartUpgradeable implements IGridTickable, IC
 			final TileEntity te = w.getTileEntity( neighbor );
 
 			// In case the TE was destroyed, we have to do a full reset immediately.
-			if( te == null )
+			if( te instanceof TileCableBus )
+			{
+				if( ( (TileCableBus) te ).getPart( this.getSide().getOpposite() ) instanceof PartInterface )
+				{
+					this.resetCache( true );
+					this.resetCache();
+				}
+			}
+			if( te == null || te instanceof TileInterface )
 			{
 				this.resetCache( true );
 				this.resetCache();
