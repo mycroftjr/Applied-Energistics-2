@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import appeng.api.networking.storage.IStorageGrid;
+import appeng.me.cache.GridStorageCache;
 import appeng.tile.misc.TileInterface;
 import appeng.tile.networking.TileCableBus;
 import com.jaquadro.minecraft.storagedrawers.api.capabilities.IItemRepository;
@@ -557,7 +559,7 @@ public class PartStorageBus extends PartUpgradeable implements IGridTickable, IC
 		try
 		{
 			// force grid to update handlers...
-			this.getProxy().getGrid().postEvent( new MENetworkCellArrayUpdate() );
+			(( GridStorageCache ) this.getProxy().getGrid().getCache( IStorageGrid.class )).cellUpdate( null );
 		}
 		catch( final GridAccessException e )
 		{
