@@ -62,8 +62,6 @@ class ItemHandlerAdapter implements IMEInventory<IAEItemStack>, IBaseMonitor<IAE
 	private StorageFilter mode;
 	private AccessRestriction access;
 
-	private ItemStack stackCache = null;
-
 	ItemHandlerAdapter( IItemHandler itemHandler, IGridProxyable proxy )
 	{
 		this.itemHandler = itemHandler;
@@ -82,8 +80,8 @@ class ItemHandlerAdapter implements IMEInventory<IAEItemStack>, IBaseMonitor<IAE
 	public IAEItemStack injectItems( IAEItemStack iox, Actionable type, IActionSource src )
 	{
 		// Try to reuse the cached stack
-		@Nullable ItemStack currentCached = stackCache;
-		stackCache = null;
+		@Nullable ItemStack currentCached = iox.getCachedItemStack();
+		iox.setCachedItemStack(null);
 
 		ItemStack orgInput;
 		int slotCount = this.itemHandler.getSlots();
@@ -108,9 +106,9 @@ class ItemHandlerAdapter implements IMEInventory<IAEItemStack>, IBaseMonitor<IAE
 		}
 
 		// Store the stack in the cache for next time.
-		if( !remaining.isEmpty() && remaining != orgInput )
+		if( !remaining.isEmpty() )
 		{
-			stackCache = remaining;
+			iox.setCachedItemStack( remaining );
 		}
 
 		// At this point, we still have some items left...

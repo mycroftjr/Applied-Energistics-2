@@ -53,6 +53,7 @@ public final class AEItemStack extends AEStack<IAEItemStack> implements IAEItemS
     private String displayName;
     @SideOnly(Side.CLIENT)
     private List<String> tooltip;
+    private ItemStack cachedItemStack;
 
     private AEItemStack(final AEItemStack is) {
         this.setStackSize(is.getStackSize());
@@ -248,6 +249,18 @@ public final class AEItemStack extends AEStack<IAEItemStack> implements IAEItemS
     @Override
     public boolean equals(final ItemStack is) {
         return this.isSameType(is);
+    }
+
+    @Override
+    public ItemStack getCachedItemStack()
+    {
+        return this.cachedItemStack;
+    }
+
+    @Override
+    public void setCachedItemStack( ItemStack is )
+    {
+        this.cachedItemStack = is;
     }
 
     @Override

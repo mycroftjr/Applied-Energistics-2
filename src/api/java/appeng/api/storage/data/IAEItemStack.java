@@ -121,4 +121,8 @@ public interface IAEItemStack extends IAEStack<IAEItemStack>
 	 */
 	boolean equals(ItemStack is);
 
+	ItemStack getCachedItemStack();
+
+	void setCachedItemStack(ItemStack is);
+
 }
