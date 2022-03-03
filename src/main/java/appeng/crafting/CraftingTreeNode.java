@@ -81,7 +81,7 @@ public class CraftingTreeNode
 		for( final ICraftingPatternDetails details : cc.getCraftingFor( this.what, this.parent == null ? null : this.parent.details, slot, this.world ) )// in
 		// order.
 		{
-			if( this.parent == null || this.parent.notRecursive( details ) )
+			if( this.parent == null || this.parent.notRecursive() )
 			{
 				this.nodes.add( new CraftingTreeProcess( cc, job, details, this, depth + 1 ) );
 			}
@@ -109,7 +109,7 @@ public class CraftingTreeNode
 			for( final ICraftingPatternDetails details : cc.getCraftingFor( this.what, this.parent == null ? null : this.parent.details, slot, this.world ) )// in
 			// order.
 			{
-				if( this.parent == null || this.parent.notRecursive( details ) )
+				if( this.parent == null || this.parent.notRecursive() )
 				{
 					this.nodes.add( new CraftingTreeProcess( cc, job, details, this, depth + 1 ) );
 				}
@@ -144,7 +144,7 @@ public class CraftingTreeNode
 			return true;
 		}
 
-		return this.parent.notRecursive( details );
+		return this.parent.notRecursive();
 	}
 
 	IAEItemStack request( final MECraftingInventory inv, long l, final IActionSource src ) throws CraftBranchFailure, InterruptedException
