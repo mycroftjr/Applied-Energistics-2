@@ -58,6 +58,7 @@ public class CraftingJob implements Runnable, ICraftingJob
 	private final IItemList<IAEItemStack> crafting = AEApi.instance().storage().getStorageChannel( IItemStorageChannel.class ).createList();
 	private final IItemList<IAEItemStack> missing = AEApi.instance().storage().getStorageChannel( IItemStorageChannel.class ).createList();
 	private final IItemList<IAEItemStack> usedWhileBuilding = AEApi.instance().storage().getStorageChannel( IItemStorageChannel.class ).createList();
+	private final IItemList<IAEItemStack> uniques = AEApi.instance().storage().getStorageChannel( IItemStorageChannel.class ).createList();
 
 	private final HashMap<String, TwoIntegers> opsAndMultiplier = new HashMap<>();
 	private final Object monitor = new Object();
@@ -110,9 +111,9 @@ public class CraftingJob implements Runnable, ICraftingJob
 		return usedWhileBuilding;
 	}
 
-	public IAEItemStack getOriginal( IAEItemStack request )
+	public IItemList<IAEItemStack> getUniques()
 	{
-		return original.getItemList().findPrecise( request );
+		return uniques;
 	}
 
 	IAEItemStack checkUse( final IAEItemStack available )

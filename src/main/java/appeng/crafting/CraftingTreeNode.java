@@ -345,6 +345,11 @@ public class CraftingTreeNode
 		throw new CraftBranchFailure( this.what, l );
 	}
 
+	boolean notRecursive()
+	{
+		return job.getUniques().findPrecise( this.what ) == null || this.parent == null;
+	}
+
 	void dive( final CraftingJob job )
 	{
 		if( this.missing > 0 )
