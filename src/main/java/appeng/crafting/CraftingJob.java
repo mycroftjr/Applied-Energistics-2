@@ -67,6 +67,7 @@ public class CraftingJob implements Runnable, ICraftingJob
 	private final Stopwatch craftingTreeWatch = Stopwatch.createUnstarted();
 	private CraftingTreeNode tree;
 	private final IAEItemStack output;
+	private long expectedOutput;
 	private boolean simulate = false;
 	private MECraftingInventory availableCheck;
 	private long bytes = 0;
@@ -96,6 +97,16 @@ public class CraftingJob implements Runnable, ICraftingJob
 
 		this.setTree( this.getCraftingTree( cc, what ) );
 		this.availableCheck = null;
+	}
+
+	public long getExpectedOutput()
+	{
+		return expectedOutput;
+	}
+
+	public void incExpectedOutput( long amount )
+	{
+		this.expectedOutput += amount;
 	}
 
 	private CraftingTreeNode getCraftingTree( final ICraftingGrid cc, final IAEItemStack what )

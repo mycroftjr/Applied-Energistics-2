@@ -20,21 +20,18 @@ package appeng.crafting;
 
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 
+import appeng.api.config.Actionable;
 import appeng.api.config.FuzzyMode;
 import appeng.util.item.AEItemStack;
 import com.google.common.collect.ImmutableCollection;
-import com.google.common.collect.Lists;
 import it.unimi.dsi.fastutil.objects.Object2LongArrayMap;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 
 import appeng.api.AEApi;
-import appeng.api.config.Actionable;
 import appeng.api.networking.crafting.ICraftingGrid;
 import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.api.networking.security.IActionSource;
@@ -56,7 +53,7 @@ public class CraftingTreeProcess
 	private long crafts = 0;
 	private IItemList<IAEItemStack> containerItems;
 	private boolean limitQty;
-	private List<IAEItemStack> containerItemsList;
+	private final List<IAEItemStack> craftingResultList = new ArrayList<>();
 	private long bytes = 0;
 
 	public CraftingTreeProcess( final ICraftingGrid cc, final CraftingJob job, final ICraftingPatternDetails details, final CraftingTreeNode craftingTreeNode, final int depth )
@@ -76,13 +73,28 @@ public class CraftingTreeProcess
 				if( containerItems == null )
 				{
 					containerItems = AEApi.instance().storage().getStorageChannel( IItemStorageChannel.class ).createList();
-					containerItemsList = new ArrayList<>();
 				}
 				containerItems.add( part );
 				this.limitQty = true;
 				//break;
 			}
 		}
+
+		for( final IAEItemStack part : details.getCondensedOutputs() )
+		{
+			if( part.equals( job.getOutput() ) )
+			{
+				job.incExpectedOutput( part.getStackSize() );
+			}
+		}
+		for( final IAEItemStack part : details.getCondensedInputs() )
+		{
+			if( part.equals( job.getOutput() ) )
+			{
+				job.incExpectedOutput( -part.getStackSize() );
+			}
+		}
+
 		// this is minor different then below, this slot uses the pattern, but kinda fudges it.
 		for( IAEItemStack part : details.getCondensedInputs() )
 		{
@@ -275,11 +287,6 @@ public class CraftingTreeProcess
 		return this.containerItems;
 	}
 
-	boolean notRecursive()
-	{
-		return this.parent == null || this.parent.notRecursive();
-	}
-
 	long getTimes( final long remaining, final long stackSize )
 	{
 		if( this.limitQty )
@@ -306,7 +313,7 @@ public class CraftingTreeProcess
 				if( o != null )
 				{
 					this.bytes++;
-					containerItemsList.add( o );
+					craftingResultList.add( o );
 				}
 			}
 		}
@@ -318,18 +325,20 @@ public class CraftingTreeProcess
 		{
 			final IAEItemStack o = out.copy();
 			o.setStackSize( o.getStackSize() * amountOfTimes );
-			inv.injectItems( o, Actionable.MODULATE, src );
+			craftingResultList.add( o );
 		}
+
+		for( IAEItemStack i : craftingResultList )
+		{
+			inv.injectItems( i, Actionable.MODULATE, src );
+		}
+
 		this.crafts += amountOfTimes;
 	}
 
-	public List<IAEItemStack> getReturnedContainers()
+	public List<IAEItemStack> getCraftingResultList()
 	{
-		if( containerItemsList == null )
-		{
-			return Collections.emptyList();
-		}
-		return containerItemsList;
+		return craftingResultList;
 	}
 
 	void dive( final CraftingJob job )

@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.List;
 
 import appeng.api.config.FuzzyMode;
-import com.google.common.collect.Lists;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.World;
 
@@ -80,7 +79,7 @@ public class CraftingTreeNode
 		for( final ICraftingPatternDetails details : cc.getCraftingFor( this.what, this.parent == null ? null : this.parent.details, slot, this.world ) )// in
 		// order.
 		{
-			if( this.parent == null || this.parent.notRecursive() )
+			if( this.parent == null || job.getExpectedOutput() < job.getOutput().getStackSize() )
 			{
 				this.nodes.add( new CraftingTreeProcess( cc, job, details, this, depth + 1 ) );
 			}
@@ -199,11 +198,6 @@ public class CraftingTreeNode
 
 				final IAEItemStack available = inv.extractItems( madeWhat, Actionable.MODULATE, src );
 
-				for( IAEItemStack i : pro.getReturnedContainers() )
-				{
-					inv.injectItems( i, Actionable.MODULATE, src );
-				}
-
 				if( available != null )
 				{
 					this.bytes += available.getStackSize();
@@ -233,11 +227,6 @@ public class CraftingTreeNode
 
 						this.what.setStackSize( l );
 						final IAEItemStack available = subInv.extractItems( this.what, Actionable.MODULATE, src );
-
-						for( IAEItemStack i : pro.getReturnedContainers() )
-						{
-							inv.injectItems( i, Actionable.MODULATE, src );
-						}
 
 						if( available != null )
 						{
@@ -284,11 +273,6 @@ public class CraftingTreeNode
 		}
 
 		throw new CraftBranchFailure( this.what, l );
-	}
-
-	boolean notRecursive()
-	{
-		return this.parent == null || job.getUniques().findPrecise( this.what ) == null;
 	}
 
 	void dive( final CraftingJob job )
