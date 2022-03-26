@@ -19,17 +19,9 @@
 package appeng.crafting;
 
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import appeng.api.config.FuzzyMode;
-import appeng.util.Platform;
-import net.minecraft.util.text.TextComponentString;
-import net.minecraft.world.World;
-
 import appeng.api.AEApi;
 import appeng.api.config.Actionable;
+import appeng.api.config.FuzzyMode;
 import appeng.api.networking.crafting.ICraftingGrid;
 import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.api.networking.security.IActionSource;
@@ -37,7 +29,14 @@ import appeng.api.storage.channels.IItemStorageChannel;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.storage.data.IItemList;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
+import appeng.util.Platform;
+import net.minecraft.util.text.TextComponentString;
+import net.minecraft.world.World;
 import net.minecraftforge.fml.common.Optional;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 
 @Optional.Interface( iface = "gregtech.api.items.IToolItem", modid = "gregtech" )
@@ -55,33 +54,22 @@ public class CraftingTreeNode
 	private final IAEItemStack what;
 	// what are the crafting patterns for this?
 	private final ArrayList<CraftingTreeProcess> nodes = new ArrayList<>();
-	private final ICraftingGrid cc;
-	private final int depth;
+	private final boolean canEmit;
+	private CraftingTreeNode loopHead;
 	private int bytes = 0;
-	private boolean canEmit = false;
 	private long missing = 0;
 	private long howManyEmitted = 0;
 	private boolean exhausted = false;
 
-	public CraftingTreeNode( final ICraftingGrid cc, final CraftingJob job, final IAEItemStack wat, final CraftingTreeProcess par, final int slot, final int depth )
+	public CraftingTreeNode( final ICraftingGrid cc, final CraftingJob job, final IAEItemStack wat, final CraftingTreeProcess par, final int slot )
 	{
 		this.what = wat;
 		this.parent = par;
 		this.slot = slot;
 		this.world = job.getWorld();
 		this.job = job;
-		this.cc = cc;
-		this.depth = depth;
 
 		this.canEmit = cc.canEmitFor( this.what );
-	}
-
-	public void addNode()
-	{
-		if( !nodes.isEmpty() )
-		{
-			return;
-		}
 
 		if( this.canEmit )
 		{
@@ -91,16 +79,59 @@ public class CraftingTreeNode
 		for( final ICraftingPatternDetails details : cc.getCraftingFor( this.what, this.parent == null ? null : this.parent.details, slot, this.world ) )// in
 		// order.
 		{
-			if( this.parent == null || notRecursive( details ) && this.parent.details != details )
+			int times = 1;
+			for( IAEItemStack o : details.getCondensedOutputs() )
 			{
-				this.nodes.add( new CraftingTreeProcess( cc, job, details, this, depth + 1 ) );
+				if( what.equals( o ) )
+				{
+					times = (int) ( what.getStackSize() / o.getStackSize() + ( what.getStackSize() % o.getStackSize() != 0 ? 1 : 0 ) );
+				}
 			}
+
+			for( IAEItemStack i : details.getCondensedInputs() )
+			{
+				if( i.equals( job.getOutput() ) )
+				{
+					job.getNeededForLoop().add( i.copy().setStackSize( i.getStackSize() * times ) );
+				}
+			}
+
+			if( this.parent == null )
+			{
+				this.nodes.add( new CraftingTreeProcess( cc, job, details, times, this ) );
+				continue;
+			}
+			CraftingTreeNode recursive = recursiveNode( this );
+			if( recursive == null )
+			{
+				this.nodes.add( new CraftingTreeProcess( cc, job, details, times, this ) );
+			}
+			else
+			{
+				reserveForNode();
+			}
+		}
+	}
+
+	void reserveForNode()
+	{
+		if( loopHead == this )
+		{
+			return;
+		}
+		IAEItemStack available = job.checkAvailable( this.what );
+		if( available != null && available.getStackSize() >= this.what.getStackSize() )
+		{
+			this.job.reserve( this, this.what.copy() );
+		}
+		else
+		{
+			parent.reserverForNode();
 		}
 	}
 
 	IAEItemStack request( final MECraftingInventory inv, long l, final IActionSource src ) throws CraftBranchFailure, InterruptedException
 	{
-		addNode();
 		this.job.handlePausing();
 		if( this.canEmit )
 		{
@@ -114,6 +145,9 @@ public class CraftingTreeNode
 		}
 
 		final IItemList<IAEItemStack> inventoryList = inv.getItemList();
+
+		IAEItemStack reserved = job.getReserved().get( this );
+
 		final List<IAEItemStack> thingsUsed = new ArrayList<>();
 
 		this.what.setStackSize( l );
@@ -146,7 +180,19 @@ public class CraftingTreeNode
 				}
 				if( this.parent.details.canSubstitute() )
 				{
-					itemList.addAll( inventoryList.findFuzzy( this.what, FuzzyMode.IGNORE_ALL ) );
+					for( IAEItemStack s : parent.details.getSubstituteInputs( this.slot ) )
+					{
+						if( s != null )
+						{
+							for( IAEItemStack ss : inventoryList.findFuzzy( s, FuzzyMode.IGNORE_ALL ) )
+							{
+								if( ss != null && !itemList.contains( ss ) )
+								{
+									itemList.add( ss );
+								}
+							}
+						}
+					}
 				}
 			}
 
@@ -191,7 +237,16 @@ public class CraftingTreeNode
 			{
 				if( !this.exhausted )
 				{
-					final IAEItemStack is = this.job.checkUse( available );
+					IAEItemStack is;
+
+					if( reserved != null )
+					{
+						is = reserved;
+					}
+					else
+					{
+						is = this.job.checkUse( available );
+					}
 
 					if( is != null )
 					{
@@ -249,7 +304,9 @@ public class CraftingTreeNode
 					while ( pro.possible && l > 0 )
 					{
 						final MECraftingInventory subInv = new MECraftingInventory( inv, true, true, true );
-						pro.request( subInv, 1, src );
+						final IAEItemStack madeWhat = pro.getAmountCrafted( this.what );
+
+						pro.request( subInv, pro.getTimes( l, madeWhat.getStackSize() ), src );
 
 						this.what.setStackSize( l );
 						final IAEItemStack available = subInv.extractItems( this.what, Actionable.MODULATE, src );
@@ -301,17 +358,24 @@ public class CraftingTreeNode
 		throw new CraftBranchFailure( this.what, l );
 	}
 
-	boolean notRecursive( ICraftingPatternDetails details )
+	CraftingTreeNode recursiveNode( CraftingTreeNode node )
 	{
 		if( this.parent == null )
 		{
-			return true;
+			return null;
 		}
-		if( this.parent.details == details )
+		if( node != this )
 		{
-			return false;
+			if( node.what.equals( this.what ) )
+			{
+				if( node.what.getStackSize() == this.what.getStackSize() )
+				{
+					loopHead = this;
+					return node;
+				}
+			}
 		}
-		return this.parent.notRecursive( details );
+		return this.parent.notRecursive( node );
 	}
 
 	void dive( final CraftingJob job )

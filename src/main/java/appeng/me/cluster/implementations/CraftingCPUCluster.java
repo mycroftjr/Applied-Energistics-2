@@ -19,22 +19,6 @@
 package appeng.me.cluster.implementations;
 
 
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
-
-import appeng.api.config.Upgrades;
-import appeng.helpers.DualityInterface;
-import appeng.helpers.PatternHelper;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-
-import net.minecraft.inventory.InventoryCrafting;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
-import net.minecraft.world.World;
-
 import appeng.api.AEApi;
 import appeng.api.config.Actionable;
 import appeng.api.config.FuzzyMode;
@@ -43,14 +27,7 @@ import appeng.api.implementations.ICraftingPatternItem;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridHost;
 import appeng.api.networking.IGridNode;
-import appeng.api.networking.crafting.CraftingItemList;
-import appeng.api.networking.crafting.ICraftingCPU;
-import appeng.api.networking.crafting.ICraftingGrid;
-import appeng.api.networking.crafting.ICraftingJob;
-import appeng.api.networking.crafting.ICraftingLink;
-import appeng.api.networking.crafting.ICraftingMedium;
-import appeng.api.networking.crafting.ICraftingPatternDetails;
-import appeng.api.networking.crafting.ICraftingRequester;
+import appeng.api.networking.crafting.*;
 import appeng.api.networking.energy.IEnergyGrid;
 import appeng.api.networking.events.MENetworkCraftingCpuChange;
 import appeng.api.networking.security.IActionSource;
@@ -63,11 +40,8 @@ import appeng.api.storage.data.IItemList;
 import appeng.api.util.WorldCoord;
 import appeng.container.ContainerNull;
 import appeng.core.AELog;
-import appeng.crafting.CraftBranchFailure;
-import appeng.crafting.CraftingJob;
-import appeng.crafting.CraftingLink;
-import appeng.crafting.CraftingWatcher;
-import appeng.crafting.MECraftingInventory;
+import appeng.crafting.*;
+import appeng.helpers.PatternHelper;
 import appeng.me.cache.CraftingGridCache;
 import appeng.me.cluster.IAECluster;
 import appeng.me.helpers.MachineSource;
@@ -75,6 +49,17 @@ import appeng.tile.crafting.TileCraftingMonitorTile;
 import appeng.tile.crafting.TileCraftingTile;
 import appeng.util.Platform;
 import appeng.util.item.AEItemStack;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import net.minecraft.inventory.InventoryCrafting;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
+import net.minecraft.world.World;
+
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 
 public final class CraftingCPUCluster implements IAECluster, ICraftingCPU
@@ -102,6 +87,7 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU
 	private IAEItemStack finalOutput;
 	private boolean waiting = false;
 	private IItemList<IAEItemStack> waitingFor = AEApi.instance().storage().getStorageChannel( IItemStorageChannel.class ).createList();
+	private IItemList<IAEItemStack> neededForLoop = AEApi.instance().storage().getStorageChannel( IItemStorageChannel.class ).createList();
 	private long availableStorage = 0;
 	private MachineSource machineSrc = null;
 	private int accelerator = 0;
@@ -224,13 +210,10 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU
 
 	public boolean canAccept( final IAEItemStack input )
 	{
-		if( input instanceof IAEItemStack )
+		if( input != null )
 		{
 			final IAEItemStack is = this.waitingFor.findPrecise( input );
-			if( is != null && is.getStackSize() > 0 )
-			{
-				return true;
-			}
+			return is != null && is.getStackSize() > 0;
 		}
 		return false;
 	}
@@ -304,6 +287,14 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU
 
 					if( this.finalOutput.equals( what ) )
 					{
+
+						IAEItemStack isLoop = neededForLoop.findPrecise( finalOutput );
+						if( isLoop != null && isLoop.getStackSize() > 0 )
+						{
+							isLoop.decStackSize( what.getStackSize() );
+							return this.inventory.injectItems( what, type, src );
+						}
+
 						IAEItemStack leftover = what;
 
 						this.finalOutput.decStackSize( what.getStackSize() );
@@ -336,6 +327,14 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU
 
 				if( this.finalOutput.equals( insert ) )
 				{
+
+					IAEItemStack isLoop = neededForLoop.findPrecise( finalOutput );
+					if( isLoop != null && isLoop.getStackSize() > 0 )
+					{
+						isLoop.decStackSize( insert.getStackSize() );
+						return this.inventory.injectItems( insert, type, src );
+					}
+
 					IAEItemStack leftover = input;
 
 					this.finalOutput.decStackSize( insert.getStackSize() );
@@ -966,10 +965,12 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU
 		try
 		{
 			this.waitingFor.resetStatus();
+			this.neededForLoop.resetStatus();
 			( (CraftingJob) job ).getTree().setJob( ci, this, src );
 			if( ci.commit( src ) )
 			{
 				this.finalOutput = job.getOutput();
+				this.neededForLoop = ( (CraftingJob) job ).getNeededForLoop();
 				this.waiting = false;
 				this.isComplete = false;
 				this.markDirty();
