@@ -283,16 +283,15 @@ public class AEItemStack extends AEStack<IAEItemStack> implements IAEItemStack
 	{
 		if( this.cachedItemStack != null )
 		{
-			ItemStack currentCached = this.cachedItemStack;
-			this.cachedItemStack = null;
-			currentCached.setCount( Ints.saturatedCast( stackSize ) );
-			return currentCached;
+			if( Platform.itemComparisons().isSameItem( this.getDefinition(), this.cachedItemStack ) )
+			{
+				ItemStack currentCached = this.cachedItemStack;
+				this.cachedItemStack = null;
+				currentCached.setCount( Ints.saturatedCast( stackSize ) );
+				return currentCached;
+			}
 		}
-
-		ItemStack itemStack = this.createItemStack();
-		itemStack.setCount( Ints.saturatedCast( stackSize ) );
-
-		return itemStack;
+		return ItemHandlerHelper.copyStackWithSize( this.getDefinition(), Ints.saturatedCast( stackSize ) );
 	}
 
 	@Override

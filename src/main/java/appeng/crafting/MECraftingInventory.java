@@ -349,6 +349,24 @@ public class MECraftingInventory implements IMEInventory<IAEItemStack>
 		return true;
 	}
 
+	void ignore( final IAEItemStack what )
+	{
+		final IAEItemStack list = this.localCache.findPrecise( what );
+		if( list != null )
+		{
+			list.setStackSize( 0 );
+		}
+	}
+
+	void reserve( final IAEItemStack what )
+	{
+		final IAEItemStack list = this.localCache.findPrecise( what );
+		if( list != null )
+		{
+			list.decStackSize( what.getStackSize() );
+		}
+	}
+
 	private void addMissing( final IAEItemStack extra )
 	{
 		this.missingCache.add( extra );

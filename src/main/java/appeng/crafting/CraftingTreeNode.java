@@ -56,6 +56,7 @@ public class CraftingTreeNode
 	private final ArrayList<CraftingTreeProcess> nodes = new ArrayList<>();
 	private final boolean canEmit;
 	private CraftingTreeNode loopHead;
+	private int times;
 	private int bytes = 0;
 	private long missing = 0;
 	private long howManyEmitted = 0;
@@ -88,14 +89,6 @@ public class CraftingTreeNode
 				}
 			}
 
-			for( IAEItemStack i : details.getCondensedInputs() )
-			{
-				if( i.equals( job.getOutput() ) )
-				{
-					job.getNeededForLoop().add( i.copy().setStackSize( i.getStackSize() * times ) );
-				}
-			}
-
 			if( this.parent == null )
 			{
 				this.nodes.add( new CraftingTreeProcess( cc, job, details, times, this ) );
@@ -115,7 +108,7 @@ public class CraftingTreeNode
 
 	void reserveForNode()
 	{
-		if( loopHead == this )
+		if( this.equals( loopHead ) )
 		{
 			return;
 		}
@@ -151,6 +144,14 @@ public class CraftingTreeNode
 		final List<IAEItemStack> thingsUsed = new ArrayList<>();
 
 		this.what.setStackSize( l );
+
+		if( parent != null )
+		{
+			if( this.what.equals( job.getOutput() ) )
+			{
+				job.getNeededForLoop().add( this.what.copy() );
+			}
+		}
 
 		if( this.getSlot() >= 0 && this.parent != null && this.parent.details.isCraftable() )
 		{
@@ -203,7 +204,16 @@ public class CraftingTreeNode
 					fuzz = fuzz.copy();
 					fuzz.setStackSize( l );
 
-					final IAEItemStack available = inv.extractItems( fuzz, Actionable.MODULATE, src );
+					final IAEItemStack available;
+
+					if( reserved != null )
+					{
+						available = reserved;
+					}
+					else
+					{
+						available = inv.extractItems( fuzz, Actionable.MODULATE, src );
+					}
 
 					if( available != null )
 					{
@@ -215,6 +225,11 @@ public class CraftingTreeNode
 							{
 								thingsUsed.add( is.copy() );
 								this.used.add( is );
+							}
+							else if( reserved != null )
+							{
+								thingsUsed.add( reserved.copy() );
+								this.used.add( reserved );
 							}
 						}
 
@@ -231,27 +246,36 @@ public class CraftingTreeNode
 		}
 		else
 		{
-			final IAEItemStack available = inv.extractItems( this.what, Actionable.MODULATE, src );
+			final IAEItemStack available;
+
+			if( parent == null && this.what.equals( job.getOutput() ) )
+			{
+				available = null;
+			}
+			else if( reserved != null )
+			{
+				available = reserved;
+			}
+			else
+			{
+				available = inv.extractItems( this.what, Actionable.MODULATE, src );
+			}
 
 			if( available != null )
 			{
 				if( !this.exhausted )
 				{
-					IAEItemStack is;
-
-					if( reserved != null )
-					{
-						is = reserved;
-					}
-					else
-					{
-						is = this.job.checkUse( available );
-					}
+					final IAEItemStack is = this.job.checkUse( available );
 
 					if( is != null )
 					{
 						thingsUsed.add( is.copy() );
 						this.used.add( is );
+					}
+					else if( reserved != null )
+					{
+						thingsUsed.add( reserved.copy() );
+						this.used.add( reserved );
 					}
 				}
 

@@ -129,7 +129,7 @@ public class CraftingJob implements Runnable, ICraftingJob
 
 	public void reserve( CraftingTreeNode node, IAEItemStack stack )
 	{
-		checkUse( stack );
+		this.checkUse( stack );
 		reserved.put( node, stack );
 	}
 
@@ -156,6 +156,8 @@ public class CraftingJob implements Runnable, ICraftingJob
 				final MECraftingInventory craftingInventory = new MECraftingInventory( this.original, true, false, true );
 
 				this.availableCheck = new MECraftingInventory( this.original, false, false, false );
+				this.reserved.values().forEach( availableCheck::reserve );
+
 				craftingTreeWatch.start();
 				this.getTree().request( craftingInventory, this.output.getStackSize(), this.actionSrc );
 				craftingTreeWatch.stop();
@@ -185,9 +187,11 @@ public class CraftingJob implements Runnable, ICraftingJob
 					if( actionSrc.player().isPresent() )
 					{
 						final MECraftingInventory craftingInventory = new MECraftingInventory( this.original, true, false, true );
-
 						this.getTree().setSimulate();
+
 						this.availableCheck = new MECraftingInventory( this.original, false, false, false );
+						this.reserved.values().forEach( availableCheck::reserve );
+						
 						craftingTreeWatch.reset().start();
 						this.getTree().request( craftingInventory, this.output.getStackSize(), this.actionSrc );
 						craftingTreeWatch.stop();
