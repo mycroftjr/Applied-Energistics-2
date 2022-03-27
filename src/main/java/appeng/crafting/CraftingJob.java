@@ -157,6 +157,7 @@ public class CraftingJob implements Runnable, ICraftingJob
 
 				this.availableCheck = new MECraftingInventory( this.original, false, false, false );
 				this.reserved.values().forEach( availableCheck::reserve );
+				this.reserved.values().forEach( craftingInventory::reserve );
 
 				craftingTreeWatch.start();
 				this.getTree().request( craftingInventory, this.output.getStackSize(), this.actionSrc );
@@ -191,7 +192,8 @@ public class CraftingJob implements Runnable, ICraftingJob
 
 						this.availableCheck = new MECraftingInventory( this.original, false, false, false );
 						this.reserved.values().forEach( availableCheck::reserve );
-						
+						this.reserved.values().forEach( craftingInventory::reserve );
+
 						craftingTreeWatch.reset().start();
 						this.getTree().request( craftingInventory, this.output.getStackSize(), this.actionSrc );
 						craftingTreeWatch.stop();
