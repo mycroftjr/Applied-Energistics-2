@@ -170,6 +170,11 @@ public class CraftingTreeProcess
 		{
 			final IAEItemStack stack = entry.getKey().request( inv, hasContainerItem ? 1 : entry.getValue(), src );
 
+			if( stack.equals( job.getOutput() ) )
+			{
+				job.getNeededForLoop().add( stack.copy() );
+			}
+
 			if( stack.getItem().hasContainerItem( stack.getDefinition() ) )
 			{
 				final ItemStack is = Platform.getContainerItem( stack.createItemStack() );

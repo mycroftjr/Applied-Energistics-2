@@ -287,17 +287,28 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU
 
 					if( this.finalOutput.equals( what ) )
 					{
-
 						IAEItemStack isLoop = neededForLoop.findPrecise( finalOutput );
-						if( isLoop != null && isLoop.getStackSize() > 0 )
-						{
-							isLoop.decStackSize( what.getStackSize() );
-							return this.inventory.injectItems( what, type, src );
-						}
-
 						IAEItemStack leftover = what;
 
-						this.finalOutput.decStackSize( what.getStackSize() );
+						if( isLoop != null && isLoop.getStackSize() > 0 )
+						{
+							if( isLoop.getStackSize() >= what.getStackSize() )
+							{
+								leftover = this.inventory.injectItems( what.copy(), type, src );
+								isLoop.decStackSize( what.getStackSize() );
+							}
+							else
+							{
+								leftover = this.inventory.injectItems( what.copy().setStackSize( what.getStackSize() - isLoop.getStackSize() ), type, src );
+								isLoop.decStackSize( what.getStackSize() - isLoop.getStackSize() );
+							}
+							if( leftover == null )
+							{
+								return null;
+							}
+						}
+
+						this.finalOutput.decStackSize( leftover.getStackSize() );
 
 						if( this.myLastLink != null )
 						{
@@ -327,17 +338,28 @@ public final class CraftingCPUCluster implements IAECluster, ICraftingCPU
 
 				if( this.finalOutput.equals( insert ) )
 				{
-
 					IAEItemStack isLoop = neededForLoop.findPrecise( finalOutput );
-					if( isLoop != null && isLoop.getStackSize() > 0 )
-					{
-						isLoop.decStackSize( insert.getStackSize() );
-						return this.inventory.injectItems( insert, type, src );
-					}
-
 					IAEItemStack leftover = input;
 
-					this.finalOutput.decStackSize( insert.getStackSize() );
+					if( isLoop != null && isLoop.getStackSize() > 0 )
+					{
+						if( isLoop.getStackSize() >= insert.getStackSize() )
+						{
+							leftover = this.inventory.injectItems( insert.copy(), type, src );
+							isLoop.decStackSize( insert.getStackSize() );
+						}
+						else
+						{
+							leftover = this.inventory.injectItems( insert.copy().setStackSize( insert.getStackSize() - isLoop.getStackSize() ), type, src );
+							isLoop.decStackSize( insert.getStackSize() - isLoop.getStackSize() );
+						}
+						if( leftover == null )
+						{
+							return null;
+						}
+					}
+
+					this.finalOutput.decStackSize( leftover.getStackSize() );
 
 					if( this.myLastLink != null )
 					{

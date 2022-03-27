@@ -145,14 +145,6 @@ public class CraftingTreeNode
 
 		this.what.setStackSize( l );
 
-		if( parent != null )
-		{
-			if( this.what.equals( job.getOutput() ) )
-			{
-				job.getNeededForLoop().add( this.what.copy() );
-			}
-		}
-
 		if( this.getSlot() >= 0 && this.parent != null && this.parent.details.isCraftable() )
 		{
 			Collection<IAEItemStack> itemList = new ArrayList<>();
