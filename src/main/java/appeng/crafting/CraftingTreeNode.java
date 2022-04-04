@@ -33,13 +33,13 @@ import appeng.core.sync.packets.PacketInformPlayer;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
 import appeng.util.Platform;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.Optional;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 
 
@@ -60,13 +60,12 @@ public class CraftingTreeNode
 	private final ArrayList<CraftingTreeProcess> nodes = new ArrayList<>();
 	private final boolean canEmit;
 	private CraftingTreeNode loopHead;
-	private int times;
 	private int bytes = 0;
 	private long missing = 0;
 	private long howManyEmitted = 0;
 	private boolean exhausted = false;
 
-	public CraftingTreeNode( final ICraftingGrid cc, final CraftingJob job, final IAEItemStack wat, final CraftingTreeProcess par, final int slot )
+	public CraftingTreeNode( final ICraftingGrid cc, final CraftingJob job, final IAEItemStack wat, long amount, final CraftingTreeProcess par, final int slot )
 	{
 		this.what = wat;
 		this.parent = par;
@@ -89,13 +88,17 @@ public class CraftingTreeNode
 			{
 				if( what.equals( o ) )
 				{
-					times = (int) ( what.getStackSize() / o.getStackSize() + ( what.getStackSize() % o.getStackSize() != 0 ? 1 : 0 ) );
+					times = (int) ( amount / o.getStackSize() + ( amount % o.getStackSize() != 0 ? 1 : 0 ) );
 				}
 			}
 
 			if( this.parent == null )
 			{
 				this.nodes.add( new CraftingTreeProcess( cc, job, details, times, this ) );
+				continue;
+			}
+			if( details == parent.details )
+			{
 				continue;
 			}
 			CraftingTreeNode recursive = recursiveNode( this );
@@ -123,7 +126,7 @@ public class CraftingTreeNode
 		}
 		else
 		{
-			parent.reserverForNode();
+			parent.reserveForNode();
 		}
 	}
 
@@ -151,7 +154,7 @@ public class CraftingTreeNode
 
 		if( this.getSlot() >= 0 && this.parent != null && this.parent.details.isCraftable() )
 		{
-			Collection<IAEItemStack> itemList = new ArrayList<>();
+			Collection<IAEItemStack> itemList = new HashSet<>();
 
 			if( this.what.getItem().isDamageable() || Platform.isGTDamageableItem( this.what.getItem() ) )
 			{
@@ -183,7 +186,7 @@ public class CraftingTreeNode
 						{
 							for( IAEItemStack ss : inventoryList.findFuzzy( s, FuzzyMode.IGNORE_ALL ) )
 							{
-								if( ss != null && !itemList.contains( ss ) )
+								if( ss != null )
 								{
 									itemList.add( ss );
 								}
@@ -195,7 +198,7 @@ public class CraftingTreeNode
 
 			for( IAEItemStack fuzz : itemList )
 			{
-				if( this.parent.details.isValidItemForSlot( this.getSlot(), fuzz.copy().getCachedItemStack( 1 ), this.world ) )
+				if( this.parent.details.isValidItemForSlot( this.getSlot(), fuzz.getDefinition(), this.world ) )
 				{
 					fuzz = fuzz.copy();
 					fuzz.setStackSize( l );
@@ -294,6 +297,7 @@ public class CraftingTreeNode
 			while ( pro.possible && l > 0 )
 			{
 				final IAEItemStack madeWhat = pro.getAmountCrafted( this.what );
+
 				pro.request( inv, pro.getTimes( l, madeWhat.getStackSize() ), src );
 
 				madeWhat.setStackSize( l );

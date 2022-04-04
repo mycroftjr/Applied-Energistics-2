@@ -87,7 +87,7 @@ public class CraftingTreeProcess
 						{
 							if( subs.fuzzyComparison( part, FuzzyMode.IGNORE_ALL ) )
 							{
-								this.nodes.put( new CraftingTreeNode( cc, job, subs.copy().setStackSize( wantedSize ), this, x ), wantedSize );
+								this.nodes.put( new CraftingTreeNode( cc, job, subs.copy(), wantedSize, this, x ), part.getStackSize() / times );
 								wantedSize = 0;
 								break;
 							}
@@ -120,7 +120,7 @@ public class CraftingTreeProcess
 							}
 							if( prioritizedIAE != null )
 							{
-								this.nodes.put( new CraftingTreeNode( cc, job, prioritizedIAE.copy().setStackSize( wantedSize ), this, x ), wantedSize );
+								this.nodes.put( new CraftingTreeNode( cc, job, prioritizedIAE.copy(), wantedSize, this, x ), part.getStackSize() / times );
 								wantedSize = 0;
 								break;
 							}
@@ -130,7 +130,7 @@ public class CraftingTreeProcess
 					{
 						part = part.copy().setStackSize( wantedSize );
 						// use the first slot...
-						this.nodes.put( new CraftingTreeNode( cc, job, part, this, x ), wantedSize );
+						this.nodes.put( new CraftingTreeNode( cc, job, part.copy(), wantedSize, this, x ), part.getStackSize() / times );
 						wantedSize = 0;
 					}
 					if( !isPartContainer && wantedSize == 0 )
@@ -168,14 +168,14 @@ public class CraftingTreeProcess
 		// request and remove inputs...
 		for( final Entry<CraftingTreeNode, Long> entry : this.nodes.object2LongEntrySet() )
 		{
-			final IAEItemStack stack = entry.getKey().request( inv, hasContainerItem ? 1 : entry.getValue(), src );
+			final IAEItemStack stack = entry.getKey().request( inv, details.isCraftable() && hasContainerItem ? 1 : entry.getValue() * amountOfTimes, src );
 
 			if( stack.equals( job.getOutput() ) )
 			{
 				job.getNeededForLoop().add( stack.copy() );
 			}
 
-			if( stack.getItem().hasContainerItem( stack.getDefinition() ) )
+			if( details.isCraftable() && stack.getItem().hasContainerItem( stack.getDefinition() ) )
 			{
 				final ItemStack is = Platform.getContainerItem( stack.createItemStack() );
 				final IAEItemStack o = AEItemStack.fromItemStack( is );
@@ -189,16 +189,16 @@ public class CraftingTreeProcess
 					o.setCachedItemStack( is );
 					containerItems.add( o );
 				}
+				if( containerItems != null )
+				{
+					for( IAEItemStack i : containerItems )
+					{
+						inv.injectItems( i, Actionable.MODULATE, src );
+					}
+				}
 			}
 		}
 
-		if( containerItems != null )
-		{
-			for( IAEItemStack i : containerItems )
-			{
-				inv.injectItems( i, Actionable.MODULATE, src );
-			}
-		}
 
 		// assume its possible.
 
@@ -285,7 +285,7 @@ public class CraftingTreeProcess
 		}
 	}
 
-	public void reserverForNode()
+	public void reserveForNode()
 	{
 		parent.reserveForNode();
 	}

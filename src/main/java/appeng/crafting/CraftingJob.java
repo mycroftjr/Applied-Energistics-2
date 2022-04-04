@@ -93,7 +93,7 @@ public class CraftingJob implements Runnable, ICraftingJob
 
 	private CraftingTreeNode getCraftingTree( final ICraftingGrid cc, final IAEItemStack what )
 	{
-		return new CraftingTreeNode( cc, this, what, null, -1 );
+		return new CraftingTreeNode( cc, this, what, what.getStackSize(), null, -1 );
 	}
 
 	void refund( final IAEItemStack o )
