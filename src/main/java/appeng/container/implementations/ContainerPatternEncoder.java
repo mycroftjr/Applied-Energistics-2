@@ -51,7 +51,7 @@ public abstract class ContainerPatternEncoder extends ContainerMEMonitorable imp
     protected SlotPatternTerm craftSlot;
     protected SlotRestrictedInput patternSlotIN;
     protected SlotRestrictedInput patternSlotOUT;
-    private IRecipe currentRecipe;
+    protected IRecipe currentRecipe;
 
     protected SlotFakeCraftingMatrix[] craftingSlots;
     protected OptionalSlotFake[] outputSlots;
@@ -126,7 +126,20 @@ public abstract class ContainerPatternEncoder extends ContainerMEMonitorable imp
 
     @Override
     public void onChangeInventory(IItemHandler inv, int slot, InvOperation mc, ItemStack removedStack, ItemStack newStack) {
+        if (inv == this.crafting) {
+            this.fixCraftingRecipes();
+        }
+    }
 
+    private void fixCraftingRecipes() {
+        if (this.isCraftingMode()) {
+            for (int x = 0; x < this.crafting.getSlots(); x++) {
+                final ItemStack is = this.crafting.getStackInSlot(x);
+                if (!is.isEmpty()) {
+                    is.setCount(1);
+                }
+            }
+        }
     }
 
     @Override
@@ -213,7 +226,6 @@ public abstract class ContainerPatternEncoder extends ContainerMEMonitorable imp
             Optional<ItemStack> maybePattern = AEApi.instance().definitions().items().encodedPattern().maybeStack(1);
             if (maybePattern.isPresent()) {
                 output = maybePattern.get();
-                this.patternSlotOUT.putStack(output);
             }
         }
 
@@ -237,6 +249,8 @@ public abstract class ContainerPatternEncoder extends ContainerMEMonitorable imp
         encodedValue.setBoolean("substitute", this.isSubstitute());
 
         output.setTagCompound(encodedValue);
+
+        patternSlotOUT.putStack(output);
     }
 
     public void multiply(int multiple) {
@@ -487,8 +501,9 @@ public abstract class ContainerPatternEncoder extends ContainerMEMonitorable imp
         return this.craftingMode;
     }
 
-    void setCraftingMode(final boolean craftingMode) {
+    public void setCraftingMode(final boolean craftingMode) {
         this.craftingMode = craftingMode;
+        this.fixCraftingRecipes();
     }
 
 
@@ -516,7 +531,7 @@ public abstract class ContainerPatternEncoder extends ContainerMEMonitorable imp
                     if (nbtTagCompound.hasKey("isCraftingMode")) {
                         boolean crafting = nbtTagCompound.getBoolean("isCraftingMode");
                         if (this.isCraftingMode() != crafting) {
-                            this.setCraftingMode(crafting);
+                            this.setCraftingMode(isCraftingMode());
                             this.updateOrderOfOutputSlots();
                         }
                     } else {
@@ -536,7 +551,7 @@ public abstract class ContainerPatternEncoder extends ContainerMEMonitorable imp
                     if (nbtTagCompound.hasKey("isSubstitute")) {
                         boolean crafting = nbtTagCompound.getBoolean("isSubstitute");
                         if (this.isCraftingMode() != crafting) {
-                            this.setCraftingMode(crafting);
+                            this.setCraftingMode(!crafting);
                             this.updateOrderOfOutputSlots();
                         }
                     } else {
