@@ -67,12 +67,11 @@ public class ItemRepo {
 
     public IAEItemStack getReferenceItem(int idx) {
         idx += this.src.getCurrentScroll() * this.rowSize;
-        synchronized (this.view) {
-            if (idx >= this.view.size()) {
-                return null;
-            }
-            return this.view.get(idx);
+
+        if (idx >= this.view.size()) {
+            return null;
         }
+        return this.view.get(idx);
     }
 
     void setSearch(final String search) {
@@ -210,9 +209,7 @@ public class ItemRepo {
 
             return view;
         }).thenAcceptAsync(view -> {
-            synchronized (this.view) {
-                this.view.clear();
-            }
+            this.view.clear();
             this.view.addAll(view);
         }).thenRunAsync(() -> {
             this.searchTask = null; // Prevent redundant cancellation
